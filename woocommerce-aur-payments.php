@@ -3,7 +3,7 @@
   Plugin Name: Aur Payments
   Plugin URI: https://aur.is
   Description: Extends WooCommerce with a <a href="https://www.aur.is/" target="_blank">Aur</a> payments.
-  Version: 1.0.1
+  Version: 1.0.2
   Author: Aur
   Author URI: https://aur.is
 
