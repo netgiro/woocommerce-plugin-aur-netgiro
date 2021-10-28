@@ -22,7 +22,7 @@ if (!defined('WPINC')) {
 // Update checker
 require 'plugin-update-checker/plugin-update-checker.php';
 $myUpdateChecker = Puc_v4_Factory::buildUpdateChecker(
-    'https://github.com/netgiro/woocommerce-plugin-aur-netgiro.git',
+    'https://github.com/netgiro/woocommerce-plugin-aur-netgiro',
     __FILE__,
     'woocommerce-aur-payments'
 );
