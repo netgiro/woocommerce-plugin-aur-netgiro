@@ -3,7 +3,7 @@
   Plugin Name: Aur Payments
   Plugin URI: https://aur.is
   Description: Extends WooCommerce with a <a href="https://www.aur.is/" target="_blank">Aur</a> payments.
-  Version: 1.0.2
+  Version: 1.0.3
   Author: Aur
   Author URI: https://aur.is
 
@@ -295,6 +295,7 @@ function aur_init_gateway_class()
                 'reference' => $order_id,
                 'customerId' => $customer_id,
                 'callbackUrl' => $payment_Confirmed_url,
+                'CallbackCancelUrl' => $payment_Confirmed_url,
                 'ConfirmationType' => '0',
                 'locationId' => '',
                 'registerId' => '',
@@ -506,10 +507,13 @@ function aur_init_gateway_class()
             $str = $secret_key . $nonce . trim($uri) . trim($data);
             $signature = hash('sha256', $str);
 
-            if ($ng_signature == $signature && is_numeric($invoice_number)) {
+            if ($ng_signature == $signature && is_numeric($invoice_number) && $payment_successful == true) {
                 $order->payment_complete();
-                $order->add_order_note( 'Payment completed by user in Aur app', false );
+                $order->add_order_note('Payment completed by user in Aur app', false);
                 $woocommerce->cart->empty_cart();
+            } else if ($ng_signature == $signature && $payment_successful == false) {
+                $order->update_status("cancelled");
+                $order->add_order_note('Payment cancelled. ResultCode: ' . $result_code, false);
             } else {
                 $failed_message = 'Aur payment failed. Woocommerce order id: ' . $order_id . ' and Netgiro reference no.: ' . $invoice_number . ' does relate to signature: ' . $signature;
 
