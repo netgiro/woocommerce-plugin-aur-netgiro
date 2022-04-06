@@ -3,7 +3,7 @@
   Plugin Name: Aur Payments
   Plugin URI: https://aur.is
   Description: Extends WooCommerce with a <a href="https://www.aur.is/" target="_blank">Aur</a> payments.
-  Version: 1.0.3
+  Version: 1.0.4
   Author: Aur
   Author URI: https://aur.is
 
@@ -11,7 +11,7 @@
   License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
   WC requires at least: 3.6.0
-  WC tested up to: 5.8.0
+  WC tested up to: 5.9.3
  */
 
 // If this file is called directly, abort.
@@ -240,7 +240,7 @@ function aur_init_gateway_class()
         /*
           * Fields validation
          */
-        public function validate_fields()
+        public function validate_fields(): bool
         {
 
             if (empty($_POST['aur_msisdn'])) {
@@ -251,7 +251,7 @@ function aur_init_gateway_class()
 
         }
 
-        function get_error_message()
+        function get_error_message(): string
         {
             return 'Villa kom upp við vinnslu beiðni þinnar. Vinsamlega reyndu aftur eða hafðu samband við Aur með tölvupósti á aur@aur.is';
         }
@@ -328,7 +328,6 @@ function aur_init_gateway_class()
                     'amount' => $amount,
                     'quantity' => $item['qty']
                 );
-                $i++;
             }
 
             $netgiro_args['cartItemRequests'] = $items;
@@ -344,9 +343,7 @@ function aur_init_gateway_class()
             $secretKey = sanitize_text_field($this->web_token);
             $body = json_encode($request_body);
             $str = $secretKey . $nonce . $this->api_endpoint . $body;
-            $signature = hash('sha256', $str);
-
-            return $signature;
+            return hash('sha256', $str);
         }
 
         /*
@@ -418,8 +415,6 @@ function aur_init_gateway_class()
                 'data_format' => 'body'
             ));
 
-            echo var_dump($response);
-
             if (!is_wp_error($response)) {
                 $res_json = json_decode(wp_remote_retrieve_body($response));
 
@@ -439,7 +434,7 @@ function aur_init_gateway_class()
                     );
 
                 } else {
-                    wc_add_notice('Please try again: ' . $res_json['Message'], 'error');
+                    wc_add_notice('Please try again: ' . $res_json->Message, 'error');
                     $order->update_status('failed');
                     return $this->get_error_message();
                 }
@@ -458,14 +453,14 @@ function aur_init_gateway_class()
                 mt_srand((double)microtime() * 10000);//optional for php 4.2.0 and up.
                 $charid = strtoupper(md5(uniqid(rand(), true)));
                 $hyphen = chr(45);// "-"
-                $uuid = chr(123)// "{"
+                // "}"
+                return chr(123)// "{"
                     . substr($charid, 0, 8) . $hyphen
                     . substr($charid, 8, 4) . $hyphen
                     . substr($charid, 12, 4) . $hyphen
                     . substr($charid, 16, 4) . $hyphen
                     . substr($charid, 20, 12)
-                    . chr(125);// "}"
-                return $uuid;
+                    . chr(125);
             }
         }
 
@@ -480,25 +475,25 @@ function aur_init_gateway_class()
             $logger = wc_get_logger();
 
             $data = file_get_contents('php://input');
-            $json_data = json_decode($data, true);
+            $json_data = json_decode($data);
 
             // Get headers from request
             $headers = getallheaders();
-            $app_key = $headers['Netgiro-Appkey'];
             $ng_signature = $headers['Netgiro-Signature'];
             $nonce = $headers['Netgiro-Nonce'];
-            $referenceid = $headers['Netgiro-Referenceid'];
 
             // Get parameters from POST
-            $success = $json_data['Success'];
-            $order_id = $json_data['PaymentInfo']['ReferenceNumber'];
+            $success = $json_data->Success;
+            $result_code = $json_data->ResultCode;
             $secret_key = sanitize_text_field($this->web_token);
-            $payment_successful = $json_data['PaymentSuccessful'];
-            $result_code = $json_data['ResultCode'];
-            $invoice_number = $json_data['PaymentInfo']['InvoiceNumber'];
-            $status_id = $json_data['PaymentInfo']['StatusId'];
-            $total_amount = $json_data['PaymentInfo']['TotalAmount'];
-            $transaction_id = $data['PaymentInfo']['TransactionId'];
+            $payment_successful = $json_data->PaymentSuccessful;
+
+            $paymentinfo = $json_data->PaymentInfo;
+            $order_id = $paymentinfo->ReferenceNumber;
+            $invoice_number = $paymentinfo->InvoiceNumber;
+            $status_id = $paymentinfo->StatusId;
+            $total_amount = $paymentinfo->TotalAmount;
+            $transaction_id = $paymentinfo->TransactionId;
 
             $order = new WC_Order($order_id);
 
